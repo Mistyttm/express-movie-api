@@ -1,0 +1,131 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Movie Information API",
+    "description": "This API provides access to publicly available data on a limited number of movies published from the year 1990 from the Internet Movie Database and other sources. The API endpoints and their usage are described in detail below.",
+    "termsOfService": "http://swagger.io/terms/",
+    "contact": { "email": "n10881131@qut.edu.au" },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Movies"
+    }
+  ],
+  "paths": {
+    "/movies/search": {
+      "get": {
+        "tags": ["Movies"],
+        "summary": "Returns a list of movie data.",
+        "description": "Returns a list of movie data. The list is arranged by imdbId, in ascending order.",
+        "operationId": "searchMovies",
+        "produces": ["application/json"],
+        "parameters": [
+          {
+              "name": "title",
+              "in": "query",
+              "description": "Text to search for in the primary title of the movie.",
+              "required": false,
+              "explode": true,
+              "schema": { "type": "string" }
+          },
+          {
+              "name": "year",
+              "in": "query",
+              "description": "The year of initial release of the movie",
+              "required": false,
+              "explode": true,
+              "schema": { "type": "string" }
+          },
+          {
+              "name": "page",
+              "in": "query",
+              "description": "Page number",
+              "required": false,
+              "explode": true,
+              "schema": { "type": "string" }
+          }
+      ],
+        "responses": {
+          "200": {
+            "description": "An array of objects containing title, year, imdbID, imdbRating, rottenTomatoesRating, metacriticRating and classification properties. The results are limited to 100 per page. An example of one object in the array is shown below.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "example": "Star Trek: First Contact"
+                          },
+                          "year": {
+                            "type": "integer",
+                            "example": 1996
+                          },
+                          "imdbID": {
+                            "type": "string",
+                            "example": "tt0117731"
+                          },
+                          "rottentomatoesRating": {
+                            "type": "integer",
+                            "example": 92
+                          },
+                          "metacriticRating": {
+                            "type": "integer",
+                            "example": 71
+                          },
+                          "classification": {
+                            "type": "string",
+                            "example": "PG-13"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "example": 6
+                        },
+                        "lastPage": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "perPage": {
+                          "type": "integer",
+                          "example": 100
+                        },
+                        "currentPage": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "from": {
+                          "type": "integer",
+                          "example": 0
+                        },
+                        "to": {
+                          "type": "integer",
+                          "example": 6
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
