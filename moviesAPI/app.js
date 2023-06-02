@@ -6,6 +6,7 @@ const logger = require("morgan");
 
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
+const moviesRouter = require("./routes/movies");
 
 const app = express();
 
@@ -13,6 +14,9 @@ const options = require("./knexfile.js");
 const { attachPaginate } = require("knex-paginate");
 const knex = require("knex")(options);
 attachPaginate();
+
+const swaggerUI = require("swagger-ui-express");
+const swaggerDocument = require("./docs/openapi.json");
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -30,6 +34,7 @@ app.use((req, res, next) => {
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
+app.use("/movies", moviesRouter);
 app.get("/knex", function(req, res, next) {
   req.db
     .raw("SELECT VERSION()")
@@ -40,6 +45,7 @@ app.get("/knex", function(req, res, next) {
     });
   res.send("Version Logged successfully");
 });
+app.use("/docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
