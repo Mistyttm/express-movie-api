@@ -26,7 +26,7 @@ router.get("/movies/search", function(req, res, next) {
 
   if (year !== undefined) {
     if (!/^\d{4}$/.test(year)) {
-      return res.json({ Error: true, Message: "Invalid year format. Please use 'yyyy' format." });
+      return res.status(400).json({ Error: true, Message: "Invalid year format. Please use 'yyyy' format." });
     }
     query.where("year", "LIKE", `%${year}%`);
   }
