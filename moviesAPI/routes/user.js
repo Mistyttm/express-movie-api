@@ -51,15 +51,20 @@ router.post("/login", function(req, res, next) {
       expires_in = 60 * 60 * 24;
     }
 
-    if (req.body.bearerExpiresInSeconds && req.body.refreshExpiresInSeconds) {
-      expires_in_refresh = parseInt(req.body.refreshExpiresInSeconds);
+    if (req.body.bearerExpiresInSeconds) {
       expires_in = parseInt(req.body.bearerExpiresInSeconds);
     }
 
+    if (req.body.refreshExpiresInSeconds){
+      expires_in_refresh = parseInt(req.body.refreshExpiresInSeconds);
+    }
+
+    const email = req.body.email;
+
     const exp = Math.floor(Date.now() / 1000) + expires_in;
     const expRefresh = Math.floor(Date.now() / 1000) + expires_in_refresh;
-    const bearerToken = jwt.sign({ exp }, JWT_SECRET);
-    const refreshToken = jwt.sign({ expRefresh }, JWT_SECRET);
+    const bearerToken = jwt.sign({ email, exp }, JWT_SECRET);
+    const refreshToken = jwt.sign({ email, expRefresh }, JWT_SECRET);
 
     req
       .db("users")
@@ -84,6 +89,50 @@ router.post("/login", function(req, res, next) {
           .status(401)
           .json({ error: true, message: "Incorrect email or password" });
       });
+  }
+});
+
+router.post("/refresh", function(req, res, next) {
+  if (!req.body.refreshToken) {
+    res.status(400).json({
+      error: true,
+      message: "Request body incomplete, refresh token required"
+    });
+  } else {
+    const decodedJWT = jwt.decode(req.body.refreshToken);
+    const email = decodedJWT.email; 
+    var expires_in_refresh = 60 * 60 * 24;
+    var expires_in = 60 * 10;
+    const exp = Math.floor(Date.now() / 1000) + expires_in;
+    const expRefresh = Math.floor(Date.now() / 1000) + expires_in_refresh;
+    const bearerToken = jwt.sign({ email, exp }, JWT_SECRET);
+    const refreshToken = jwt.sign({ email, expRefresh }, JWT_SECRET);
+    
+
+    if (decodedJWT.expRefresh < Math.floor(Date.now() / 1000)) {
+      return res
+        .status(401)
+        .json({ error: true, message: "JWT token has expired" });
+    } else {
+      req
+        .db("users")
+        .where("email", email)
+        .update({ jwt: refreshToken })
+        .then(() => {
+          res.status(200).json({
+            bearerToken: {
+              bearerToken,
+              token_type: "Bearer",
+              expires_in
+            },
+            refreshToken: {
+              refreshToken,
+              token_type: "Refresh",
+              expires_in_refresh
+            }
+          });
+        });
+    }
   }
 });
 
