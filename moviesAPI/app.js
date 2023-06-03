@@ -5,7 +5,7 @@ const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 
 const indexRouter = require("./routes/index");
-const usersRouter = require("./routes/users");
+const usersRouter = require("./routes/user");
 const moviesRouter = require("./routes/movies");
 const peopleRouter = require("./routes/people");
 
@@ -14,6 +14,7 @@ const app = express();
 const options = require("./knexfile.js");
 const { attachPaginate } = require("knex-paginate");
 const knex = require("knex")(options);
+const cors = require("cors");
 attachPaginate();
 
 const swaggerUI = require("swagger-ui-express");
@@ -25,16 +26,18 @@ app.set("view engine", "jade");
 
 app.use(logger("dev"));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use((req, res, next) => {
   req.db = knex;
   next();
 });
+app.use(express.static(path.join(__dirname, "public")));
+app.use(cors());
 
 app.use("/", indexRouter);
-app.use("/users", usersRouter);
+app.use("/user", usersRouter);
 app.use("/movies", moviesRouter);
 app.use("/people", peopleRouter);
 app.get("/knex", function(req, res, next) {
