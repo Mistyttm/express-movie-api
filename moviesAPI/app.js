@@ -7,6 +7,7 @@ const logger = require("morgan");
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
 const moviesRouter = require("./routes/movies");
+const peopleRouter = require("./routes/people");
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use((req, res, next) => {
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/movies", moviesRouter);
+app.use("/people", peopleRouter);
 app.get("/knex", function(req, res, next) {
   req.db
     .raw("SELECT VERSION()")
