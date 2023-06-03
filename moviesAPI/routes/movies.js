@@ -82,13 +82,23 @@ router.get("/data/:imdbID", function(req, res, next) {
 
   if (Object.keys(req.query).length > 0) {
     const invalidParam = Object.keys(req.query)[0];
-    res.status(400).json({ Error: true, Message: `Invalid query parameter: ${invalidParam}` });
+    res
+      .status(400)
+      .json({
+        Error: true,
+        Message: `Invalid query parameter: ${invalidParam}`
+      });
     return;
   }
 
   Promise.all([query, principals, ratings, query2])
     .then(results => {
-      const [queryResult, principalsResult, ratingsResult, query2Result] = results;
+      const [
+        queryResult,
+        principalsResult,
+        ratingsResult,
+        query2Result
+      ] = results;
 
       if (queryResult.length === 0) {
         res.status(404).json({ Error: true, Message: "ID not found" });
@@ -98,7 +108,18 @@ router.get("/data/:imdbID", function(req, res, next) {
       const mergedResult = {
         ...queryResult[0],
         genres: queryResult[0].genres.split(",").map(genre => genre.trim()), // Convert the comma-separated string to an array
-        principals: principalsResult,
+        principals: principalsResult.map(principal => {
+          if (principal.characters !== ""){
+            principal.characters = JSON.parse(principal.characters);
+          }
+          result = {
+            id: principal.id,
+            category: principal.category,
+            name: principal.name,
+            characters: principal.characters
+          };
+          return result;
+        }),
         ratings: [
           {
             source: "Internet Movie Database",
@@ -111,7 +132,7 @@ router.get("/data/:imdbID", function(req, res, next) {
           {
             source: "Metacritic",
             value: ratingsResult[0].metacriticRating
-          },
+          }
         ],
         ...query2Result[0]
       };
@@ -123,10 +144,5 @@ router.get("/data/:imdbID", function(req, res, next) {
       res.json({ Error: true, Message: "Error in MySQL query" });
     });
 });
-
-
-
-
-
 
 module.exports = router;
