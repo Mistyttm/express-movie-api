@@ -18,6 +18,7 @@
     "knex-paginate": "^3.1.1",
     "morgan": "~1.9.1",
     "mysql2": "^3.3.3",
-    "swagger-ui-express": "^4.6.3"
+    "swagger-ui-express": "^4.6.3",
+    "validate-date": "^2.0.0"
   }
 }

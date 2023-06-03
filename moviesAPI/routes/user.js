@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
+const authorization = require("../middleware/authorization");
+var validateDate = require("validate-date");
 const JWT_SECRET = process.env.JWT_SECRET;
 
 /* GET users listing. */
@@ -151,14 +153,161 @@ router.post("/logout", function(req, res, next) {
         .json({ error: true, message: "JWT token has expired" });
     }
 
+    req.db("users").where("email", email).update({ jwt: null }).then(() => {
+      res.status(200).json({
+        error: false,
+        message: "Token successfully invalidated"
+      });
+    });
+  }
+});
+
+router.post("/:email/profile", authorization, function(req, res, next) {
+  const email = req.params.email;
+  const cleanedToken = req.headers.authorization.substring(7);
+  const decodedJWT = jwt.decode(cleanedToken);
+  const JWTemail = decodedJWT.email;
+  var validEmail = false;
+
+  if (email !== JWTemail) {
+    res.status(403).json({ error: true, message: "Forbidden" });
+    return;
+  }
+
+  if (decodedJWT.expRefresh < Math.floor(Date.now() / 1000)) {
+    return res
+      .status(401)
+      .json({ error: true, message: "JWT token has expired" });
+  }
+
+  if (
+    !req.body.firstName ||
+    !req.body.lastName ||
+    !req.body.dob ||
+    !req.body.address
+  ) {
+    return res.status(400).json({
+      error: true,
+      message:
+        "Request body incomplete: firstName, lastName, dob and address are required"
+    });
+  }
+
+  if (
+    !(typeof req.body.firstName === "string") ||
+    !(typeof req.body.lastName === "string") ||
+    !(typeof req.body.dob === "string") ||
+    !(typeof req.body.address === "string")
+  ) {
+    return res.status(400).json({
+      error: true,
+      message:
+        "Request body invalid: firstName, lastName, dob and address must be strings only"
+    });
+  }
+
+  if (
+    !validateDate(
+      req.body.dob,
+      (responseType = "boolean"),
+      (dateFormat = "yyyy-mm-dd")
+    )
+  ) {
+    return res.status(400).json({
+      error: true,
+      message: "Invalid input: dob must be a real date in format YYYY-MM-DD"
+    });
+  }
+
+  req
+    .db("users")
+    .count("*")
+    .where("email", email)
+    .then(result => {
+      const count = result[0]["count(*)"];
+      const emailExists = count > 0;
+      validEmail = true;
+    })
+    .catch(error => {
+      return res.status(404).json({ error: true, message: "User not found" });
+    });
+
+  req
+    .db("users")
+    .where("email", email)
+    .update({
+      firstname: req.body.firstName,
+      lastName: req.body.lastName,
+      dob: req.body.dob,
+      address: req.body.address
+    })
+    .then(() => {
+      res.status(200).json({
+        email: email,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        dob: req.body.dob,
+        address: req.body.address
+      });
+    });
+});
+
+router.get("/:email/profile", function(req, res, next) {
+  var cleanedToken;
+  var decodedJWT;
+  try {
+    cleanedToken = req.headers.authorization.substring(7);
+    decodedJWT = jwt.decode(cleanedToken);
+    if (decodedJWT.expRefresh < Math.floor(Date.now() / 1000)) {
+      return res
+        .status(401)
+        .json({ error: true, message: "JWT token has expired" });
+    } 
+  } catch {
+    console.log("sad");
+  }
+  
+  if(req.headers.authorized){
+    if (!jwt.verify(cleanedToken, JWT_SECRET)) {
+      return res.status(401).json({ error: true, message: "Invalid JWT token" });
+    }
+  }
+
+  if (!("authorization" in req.headers) || decodedJWT.email !== req.params.email) {
     req
       .db("users")
-      .where("email", email)
-      .update({ jwt: null })
-      .then(() => {
+      .select("email", "firstName", "lastName")
+      .where("email", req.params.email)
+      .then(results => {
         res.status(200).json({
-          "error": false,
-          "message": "Token successfully invalidated"
+          email: results[0].email,
+          firstName: results[0].firstName,
+          lastName: results[0].lastName
+        });
+      });
+    return;
+  } else if (!req.headers.authorization.match(/^Bearer/)) {
+    return res
+      .status(401)
+      .json({ error: true, message: "Authorization header is malformed" });
+  } else {
+    req
+      .db("users")
+      .select("email", "firstName", "lastName", "dob", "address")
+      .where("email", req.params.email)
+      .then(results => {
+        res.status(200).json({
+          email: results[0].email,
+          firstName: results[0].firstName,
+          lastName: results[0].lastName,
+          dob: results[0].dob,
+          address: results[0].address
+        });
+      })
+      .catch(err => {
+        return res.status(404).json({
+          error: true,
+          message: "User not found"
         });
       });
   }
