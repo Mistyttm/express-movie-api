@@ -1,12 +1,13 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
+const authorization = require("../middleware/authorization");
 
 /* GET people listing. */
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
 
-router.get('/:id', function(req, res, next) {
+router.get('/:id', authorization, function(req, res, next) {
   const id = req.params.id;
 
   const query = req.db
@@ -26,15 +27,19 @@ router.get('/:id', function(req, res, next) {
 
       const mergedResult = {
         ...queryResults[0],
-        roles: [
-          {
-            title: rolesResults[0].primaryTitle,
-            movieID: rolesResults[0].movieID,
-            category: rolesResults[0].category,
-            characters: JSON.parse(rolesResults[0].characters),
-            imdbRating: parseFloat(rolesResults[0].imdbRating)
+        roles: rolesResults.map(role => {
+          if (role.characters !== ""){
+            role.characters = JSON.parse(role.characters);
           }
-        ]
+          result = {
+            title: role.primaryTitle,
+            movieID: role.movieID,
+            category: role.category,
+            characters: role.characters,
+            imdbRating: parseFloat(role.imdbRating)
+          };
+          return result;
+        })
       };
 
       res.json(mergedResult);
