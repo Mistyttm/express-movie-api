@@ -1,5 +1,7 @@
 *.docx
 
+*.key
+
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
