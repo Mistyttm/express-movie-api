@@ -12,14 +12,14 @@ const peopleRouter = require("./routes/people");
 
 const app = express();
 
-const options = require("./knexfile.js");
+const options = require("./config/knexfile.js");
 const { attachPaginate } = require("knex-paginate");
 const knex = require("knex")(options);
 const cors = require("cors");
 attachPaginate();
 
 const swaggerUI = require("swagger-ui-express");
-const swaggerDocument = require("./swagger-config.json");
+const swaggerDocument = require("./docs/swagger-config.json");
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -52,7 +52,6 @@ app.get("/knex", function(req, res, next) {
     });
   res.send("Version Logged successfully");
 });
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
