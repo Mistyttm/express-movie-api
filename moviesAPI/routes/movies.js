@@ -7,7 +7,12 @@ router.get("/", function(req, res, next) {
 });
 
 router.get("/search", function(req, res, next) {
-  const { title, year, page } = req.query;
+  const { title, year } = req.query;
+  let page = req.query.page;
+
+  if (page === undefined) {
+    page = 1;
+  }
   const query = req.db
     .from("basics")
     .select(
@@ -27,21 +32,44 @@ router.get("/search", function(req, res, next) {
   if (year !== undefined) {
     if (!/^\d{4}$/.test(year)) {
       return res.status(400).json({
-        Error: true,
-        Message: "Invalid year format. Please use 'yyyy' format."
+        error: true,
+        message: "Invalid year format. Format must be yyyy."
       });
     }
     query.where("year", "LIKE", `%${year}%`);
   }
 
+  if (isNaN(page) && page !== undefined) {
+    return res.status(400).json({
+      error: true,
+      message: "Invalid page format. page must be a number."
+    });
+  } else {
+  }
+
+  var data = [];
+
   query
     .paginate({
       perPage: 100,
-      currentPage: page || 1,
+      currentPage: parseInt(page),
       isLengthAware: true
     })
     .then(rows => {
-      res.json(rows);
+      rows.data.map(movie => {
+        movieOb = {
+          title: movie.title,
+          year: movie.year,
+          imdbID: movie.imdbID,
+          imdbRating: parseFloat(movie.imdbRating),
+          rottenTomatoesRating: parseInt(movie.rottentomatoesRating),
+          metacriticRating: parseInt(movie.metacriticRating),
+          classification: movie.classification
+        };
+        data.push(movieOb);
+      });
+      const pagination = rows.pagination;
+      res.json({ data, pagination });
     })
     .catch(err => {
       console.log(err);
@@ -82,12 +110,10 @@ router.get("/data/:imdbID", function(req, res, next) {
 
   if (Object.keys(req.query).length > 0) {
     const invalidParam = Object.keys(req.query)[0];
-    res
-      .status(400)
-      .json({
-        Error: true,
-        Message: `Invalid query parameter: ${invalidParam}`
-      });
+    res.status(400).json({
+      error: true,
+      message: `Query parameters are not permitted.`
+    });
     return;
   }
 
@@ -101,7 +127,7 @@ router.get("/data/:imdbID", function(req, res, next) {
       ] = results;
 
       if (queryResult.length === 0) {
-        res.status(404).json({ Error: true, Message: "ID not found" });
+        res.status(404).json({ error: true, message: "ID not found" });
         return;
       }
 
@@ -109,7 +135,7 @@ router.get("/data/:imdbID", function(req, res, next) {
         ...queryResult[0],
         genres: queryResult[0].genres.split(",").map(genre => genre.trim()), // Convert the comma-separated string to an array
         principals: principalsResult.map(principal => {
-          if (principal.characters !== ""){
+          if (principal.characters !== "") {
             principal.characters = JSON.parse(principal.characters);
           }
           result = {
@@ -123,15 +149,15 @@ router.get("/data/:imdbID", function(req, res, next) {
         ratings: [
           {
             source: "Internet Movie Database",
-            value: ratingsResult[0].imdbRating
+            value: parseFloat(ratingsResult[0].imdbRating)
           },
           {
             source: "Rotten Tomatoes",
-            value: ratingsResult[0].rottentomatoesRating
+            value: parseInt(ratingsResult[0].rottentomatoesRating)
           },
           {
             source: "Metacritic",
-            value: ratingsResult[0].metacriticRating
+            value: parseInt(ratingsResult[0].metacriticRating)
           }
         ],
         ...query2Result[0]
@@ -141,7 +167,7 @@ router.get("/data/:imdbID", function(req, res, next) {
     })
     .catch(err => {
       console.log(err);
-      res.json({ Error: true, Message: "Error in MySQL query" });
+      res.json({ error: true, message: "Error in MySQL query" });
     });
 });
 
