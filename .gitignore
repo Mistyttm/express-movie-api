@@ -1,6 +1,7 @@
 *.docx
 
 *.key
+*.crt
 
 .vscode/*
 !.vscode/settings.json
